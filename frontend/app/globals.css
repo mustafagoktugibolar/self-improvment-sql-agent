@@ -1,0 +1,92 @@
+:root {
+  --bg: #0f1115;
+  --panel: #171a21;
+  --border: #2a2f3a;
+  --text: #e6e8ee;
+  --muted: #8b93a5;
+  --accent: #4f8cff;
+  --danger: #ff6b6b;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding-bottom: 12px;
+}
+header h1 { margin: 0; font-size: 18px; }
+.status { color: var(--muted); font-size: 12px; font-family: var(--font-geist-mono), monospace; }
+
+.chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.empty { color: var(--muted); margin: auto; }
+
+.msg { max-width: 85%; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); }
+.msg.user { align-self: flex-end; background: #1d2a44; }
+.msg.assistant { align-self: flex-start; }
+.msg .role { display: block; color: var(--muted); font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+.msg pre { margin: 0; white-space: pre-wrap; font-family: var(--font-geist-mono), monospace; font-size: 13px; }
+.loading { color: var(--muted); }
+
+.error { color: var(--danger); border: 1px solid var(--danger); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+
+.composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+.composer input {
+  flex: 1; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); font: inherit;
+}
+.composer button {
+  padding: 0 18px; border: 0; border-radius: 8px; background: var(--accent); color: white; font: inherit; cursor: pointer;
+}
+.composer button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* Dark theme for CopilotKit chat (it follows the .dark class on <html>) */
+.chat { color-scheme: dark; }
+.chat > * { background: transparent; color: var(--text); }
+
+.tool-card {
+  margin: 4px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  font-size: 13px;
+  max-width: 100%;
+}
+.tool-card summary { cursor: pointer; padding: 8px 10px; display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.tool-card .dot { width: 8px; height: 8px; border-radius: 50%; }
+.tool-card .dot.done { background: #3ecf8e; }
+.tool-card .dot.running { background: var(--accent); animation: pulse 1s infinite; }
+.tool-card pre {
+  margin: 0; padding: 10px; overflow-x: auto; max-height: 240px;
+  border-top: 1px solid var(--border); font-family: var(--font-geist-mono), monospace; font-size: 12px;
+}
+.tool-card .sql { color: #9ccfff; }
+@keyframes pulse { 50% { opacity: 0.3; } }
