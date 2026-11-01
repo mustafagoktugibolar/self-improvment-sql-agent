@@ -4,8 +4,7 @@ import {
   copilotRuntimeNextJSAppRouterEndpoint,
 } from "@copilotkit/runtime";
 import type { NextRequest } from "next/server";
-
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+import { BACKEND_URL } from "@/lib/config";
 
 // Agent name must match the one used in <CopilotKit agent="..."> and the Python LangGraphAgent name.
 const runtime = new CopilotRuntime({

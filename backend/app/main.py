@@ -23,6 +23,9 @@ async def lifespan(app: FastAPI):
         name="sql_agent",
         description="Answers questions about the SQLite database with SQL tools.",
         graph=app.state.graph,
+        # Use the AG-UI standard interrupt flow (RUN_FINISHED outcome + resume[])
+        # instead of the legacy on_interrupt custom event. Needed for ask_user.
+        emit_interrupt_outcome=True,
     )
     add_langgraph_fastapi_endpoint(app, agent, AGUI_PATH)
 

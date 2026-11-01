@@ -1,0 +1,113 @@
+{
+  "tables": {
+    "customers": {
+      "description": "One row per customer.",
+      "columns": {
+        "id": {"description": "Customer id."},
+        "name": {"description": "Customer display name."},
+        "city": {"description": "City the customer is registered in (may differ from orders.shipping_city)."},
+        "segment": {"description": "Customer type.", "values": ["retail", "corporate"]},
+        "joined_at": {"description": "Signup date, ISO text (YYYY-MM-DD)."}
+      }
+    },
+    "categories": {
+      "description": "Product categories.",
+      "columns": {
+        "id": {"description": "Category id."},
+        "name": {"description": "Unique category name."}
+      }
+    },
+    "products": {
+      "description": "Product catalog with current list price and cost.",
+      "columns": {
+        "category_id": {"description": "References categories.id."},
+        "unit_price": {"description": "Current list price per unit."},
+        "unit_cost": {"description": "Current cost per unit."},
+        "is_active": {"description": "Whether the product is currently sold.", "values": [0, 1]}
+      }
+    },
+    "orders": {
+      "description": "One row per order (order header). Every order has exactly one payment row.",
+      "columns": {
+        "customer_id": {"description": "References customers.id."},
+        "ordered_at": {"description": "Order date, ISO text (YYYY-MM-DD)."},
+        "status": {
+          "description": "Fulfilment status of the order. Cancelled orders are excluded from all business metrics (order counts, revenue, customers who ordered, ...) unless the user explicitly asks to include them.",
+          "values": ["pending", "confirmed", "shipped", "delivered", "cancelled"]
+        },
+        "shipping_city": {"description": "Delivery city of this order."}
+      }
+    },
+    "order_items": {
+      "description": "Order lines: one row per product in an order.",
+      "columns": {
+        "order_id": {"description": "References orders.id."},
+        "product_id": {"description": "References products.id."},
+        "quantity": {"description": "Units ordered (INTEGER, > 0)."},
+        "unit_price": {"description": "Unit price recorded on the order line."},
+        "unit_cost": {"description": "Unit cost recorded on the order line."},
+        "discount_rate": {"description": "Line discount as a fraction between 0 and 1 (0.1 = 10%)."}
+      }
+    },
+    "payments": {
+      "description": "One payment row per order (order_id is unique).",
+      "columns": {
+        "order_id": {"description": "References orders.id."},
+        "paid_at": {"description": "Payment date, ISO text. NULL when status is pending or failed."},
+        "amount": {"description": "Payment amount for the whole order."},
+        "status": {"description": "Payment status.", "values": ["pending", "paid", "failed", "refunded"]},
+        "method": {"description": "Payment method.", "values": ["card", "cash", "transfer"]}
+      }
+    }
+  },
+  "terms": [
+    {
+      "name": "revenue",
+      "synonyms": ["sales", "turnover", "satış", "satışlar", "ciro", "gelir", "hasılat"],
+      "definition": "Collected revenue: sum of payments.amount where payments.status = 'paid' and the order is not cancelled (orders.status <> 'cancelled'). Pending, failed and refunded payments are excluded. Some cancelled orders still show a 'paid' payment; they are excluded too. payments.amount equals the discounted line total of the order. 'Top customers by sales' means ranking by this revenue.",
+      "sql": "SELECT SUM(p.amount) FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.status = 'paid' AND o.status <> 'cancelled'"
+    },
+    {
+      "name": "order count",
+      "synonyms": ["number of orders", "sipariş sayısı", "sipariş adedi"],
+      "definition": "Number of orders that are not cancelled (orders.status <> 'cancelled'), regardless of payment status.",
+      "sql": "SELECT COUNT(*) FROM orders o WHERE o.status <> 'cancelled'"
+    },
+    {
+      "name": "profit",
+      "synonyms": ["gross profit", "kâr", "kar", "brüt kâr"],
+      "definition": "Gross profit on the same orders as revenue (paid payment, not cancelled): sum over order_items of quantity * (unit_price * (1 - discount_rate) - unit_cost). The discount reduces the price, not the cost.",
+      "sql": "SELECT SUM(oi.quantity * (oi.unit_price * (1 - oi.discount_rate) - oi.unit_cost)) FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN payments p ON p.order_id = o.id WHERE p.status = 'paid' AND o.status <> 'cancelled'"
+    },
+    {
+      "name": "profit margin",
+      "synonyms": ["margin", "kâr marjı", "kar marjı", "marj"],
+      "definition": "Profit divided by discounted line revenue on the same orders (paid, not cancelled). A fraction; multiply by 100 for a percentage.",
+      "sql": "SELECT SUM(oi.quantity * (oi.unit_price * (1 - oi.discount_rate) - oi.unit_cost)) * 1.0 / SUM(oi.quantity * oi.unit_price * (1 - oi.discount_rate)) FROM order_items oi JOIN orders o ON o.id = oi.order_id JOIN payments p ON p.order_id = o.id WHERE p.status = 'paid' AND o.status <> 'cancelled'"
+    },
+    {
+      "name": "average order value",
+      "synonyms": ["AOV", "ortalama sipariş tutarı", "sepet ortalaması", "ortalama sepet"],
+      "definition": "Revenue divided by the number of orders counted in revenue (paid payment, not cancelled).",
+      "sql": "SELECT SUM(p.amount) * 1.0 / COUNT(*) FROM payments p JOIN orders o ON o.id = p.order_id WHERE p.status = 'paid' AND o.status <> 'cancelled'"
+    },
+    {
+      "name": "new customer",
+      "synonyms": ["new customers", "first-time customer", "first-time buyer", "yeni müşteri", "yeni müşteriler", "ilk kez sipariş veren müşteri"],
+      "definition": "A customer whose first non-cancelled order (MIN(orders.ordered_at) with orders.status <> 'cancelled') falls in the period. For signups use 'new signup' instead. The example SQL uses Q3 2026; replace the dates.",
+      "sql": "SELECT COUNT(*) FROM (SELECT o.customer_id, MIN(o.ordered_at) AS first_order FROM orders o WHERE o.status <> 'cancelled' GROUP BY o.customer_id) f WHERE f.first_order BETWEEN '2026-07-01' AND '2026-09-30'"
+    },
+    {
+      "name": "new signup",
+      "synonyms": ["new signups", "signup", "signups", "registration", "registrations", "yeni kayıt", "yeni kayıtlar", "kayıt olan müşteri", "üye olan müşteri"],
+      "definition": "A customer whose signup date (customers.joined_at) falls in the period, whether or not they ordered. The example SQL uses Q3 2026; replace the dates.",
+      "sql": "SELECT COUNT(*) FROM customers c WHERE c.joined_at BETWEEN '2026-07-01' AND '2026-09-30'"
+    },
+    {
+      "name": "active customer",
+      "synonyms": ["active customers", "aktif müşteri", "aktif müşteriler"],
+      "definition": "A customer with at least one non-cancelled order in the 90 days up to the latest order date in the data (not today's date, because the dataset is static).",
+      "sql": "SELECT COUNT(DISTINCT o.customer_id) FROM orders o WHERE o.status <> 'cancelled' AND o.ordered_at >= date((SELECT MAX(ordered_at) FROM orders), '-90 day')"
+    }
+  ]
+}

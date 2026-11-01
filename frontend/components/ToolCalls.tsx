@@ -1,6 +1,7 @@
 "use client";
 
 import { useRenderTool } from "@copilotkit/react-core/v2";
+import styles from "./cards.module.css";
 
 type ToolProps = {
   name: string;
@@ -14,7 +15,18 @@ function describe(name: string, params: Record<string, unknown>): string {
   if (name === "sql_db_list_tables") return "Listing tables";
   if (name === "sql_db_schema") return `Reading schema: ${params.table_names ?? ""}`;
   if (name === "sql_db_query") return "Running query";
+  if (name === "business_definitions") return `Looking up: ${params.terms ?? ""}`;
+  if (name === "ask_user") return "Asking you a question";
   return name;
+}
+
+// Tool results are compact JSON (fewer tokens for the model); indent them for people.
+function formatResult(result: string): string {
+  try {
+    return JSON.stringify(JSON.parse(result), null, 2);
+  } catch {
+    return result;
+  }
 }
 
 function ToolCard({ name, parameters, status, result }: ToolProps) {
@@ -22,14 +34,14 @@ function ToolCard({ name, parameters, status, result }: ToolProps) {
   const query = name === "sql_db_query" ? String(parameters.query ?? "") : "";
 
   return (
-    <details className="tool-card">
+    <details className={styles.toolCard}>
       <summary>
-        <span className={`dot ${done ? "done" : "running"}`} />
+        <span className={`${styles.dot} ${done ? styles.done : styles.running}`} />
         {describe(name, parameters)}
         {!done && "…"}
       </summary>
-      {query && <pre className="sql">{query}</pre>}
-      {done && result && <pre className="result">{result}</pre>}
+      {query && <pre>{query}</pre>}
+      {done && result && <pre>{formatResult(result)}</pre>}
     </details>
   );
 }
