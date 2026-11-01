@@ -7,6 +7,8 @@ load_dotenv()
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DB_PATH = Path(os.getenv("DB_PATH", PROJECT_ROOT / "agent.db"))
+# Conversation state (LangGraph checkpoints); separate from the data the agent queries.
+CHECKPOINT_DB_PATH = Path(os.getenv("CHECKPOINT_DB_PATH", PROJECT_ROOT / "checkpoints.db"))
 INIT_SQL_PATH = PROJECT_ROOT / "seed_agent.sql"
 CATALOG_PATH = Path(os.getenv("CATALOG_PATH", PROJECT_ROOT / "schema_catalog.json"))
 

@@ -105,6 +105,9 @@ def business_definitions(terms: str) -> str:
     return f"No definition found. Defined terms: {', '.join(available)}"
 
 
+ASK_USER_TOOL_NAME = "ask_user"
+
+
 @tool
 def ask_user(question: str, options: list[str]) -> str:
     """Ask the user a clarifying question and wait for the answer.
